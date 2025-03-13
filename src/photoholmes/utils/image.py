@@ -135,6 +135,30 @@ def plot_multiple(
         print("Figure saved at:", save_path)
     plt.show()
 
+def create_heatmap(heatmap: NDArray, colormap: int = cv.COLORMAP_JET) -> NDArray:
+    """
+    Create a colorized heatmap visualization.
+
+    Args:
+        heatmap (NDArray): The heatmap data.
+        colormap (int, optional): The OpenCV colormap to apply. Defaults to cv.COLORMAP_JET.
+
+    Returns:
+        NDArray: The colorized heatmap image in RGB format.
+    """
+    # Normalize the heatmap to 0-255 and convert to 8-bit unsigned integer
+    heatmap_normalized = cv.normalize(
+        heatmap, None, alpha=0, beta=255, norm_type=cv.NORM_MINMAX
+    )
+    heatmap_uint8 = np.uint8(heatmap_normalized)
+
+    # Apply the color map
+    heatmap_img = cv.applyColorMap(heatmap_uint8, colormap)
+
+    # Convert from BGR to RGB for plotting
+    heatmap_rgb = cv.cvtColor(heatmap_img, cv.COLOR_BGR2RGB)
+    
+    return heatmap_rgb
 
 def overlay_mask(img: NDArray, heatmap: NDArray) -> NDArray:
     """
