@@ -60,14 +60,10 @@ class BlockingArtifacts(BaseMethod):
         combined_artifacts = vertical_artifacts + horizontal_artifacts
         artifact_map = self._analyze_blocks(combined_artifacts)
 
-        normalized_map = (artifact_map - np.min(artifact_map)) / \
-            (np.max(artifact_map) - np.min(artifact_map) + 1e-7)
-        heatmap = cv2.applyColorMap(np.uint8(255 * normalized_map), cv2.COLORMAP_JET)
-
         target_size = image_size if image_size is not None else (image.shape[0], image.shape[1])
         
         resizer = ResizeToOriginal(interpolation='bilinear')
-        heatmap = resizer(heatmap, target_size)
+        heatmap = resizer(artifact_map, target_size)
 
         return heatmap
 
