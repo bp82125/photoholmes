@@ -23,6 +23,7 @@ class MethodFactory:
         - Splicebuster
         - TruFor
         - Zero
+        - Mesorch
 
     Methods:
         load(method_name: Union[str, MethodRegistry], config: Optional[Union[dict, str]] =
@@ -129,5 +130,9 @@ class MethodFactory:
                 from photoholmes.methods.zero import Zero, zero_preprocessing
 
                 return Zero.from_config(config), zero_preprocessing
+            case MethodRegistry.MESORCH:
+                from photoholmes.methods.mesorch import Mesorch, mesorch_preprocessing
+
+                return Mesorch.from_config(config), mesorch_preprocessing
             case _:
                 raise NotImplementedError(f"Method '{method_name}' is not implemented.")

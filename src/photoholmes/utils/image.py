@@ -1,3 +1,4 @@
+from typing import Optional, Tuple
 import logging
 from pathlib import Path
 from tempfile import NamedTemporaryFile
@@ -5,6 +6,7 @@ from typing import List, Optional, Tuple
 
 import cv2 as cv
 import jpegio
+import jpeglib
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
@@ -160,6 +162,9 @@ def overlay_mask(img: NDArray, heatmap: NDArray) -> NDArray:
     # Convert superimposed image from BGR to RGB for plotting
     super_imposed_img_rgb = cv.cvtColor(super_imposed_img, cv.COLOR_BGR2RGB)
     return super_imposed_img_rgb
+
+
+logger = logging.getLogger(__name__)
 
 
 def read_jpeg_data(

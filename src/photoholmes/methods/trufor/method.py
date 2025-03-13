@@ -96,7 +96,7 @@ class TruFor(BaseTorchMethod):
                 output heatmap in the benchmark method.
         """
         super().__init__()
-        logger.warn(
+        logger.warning(
             f"{YELLOW_COLOR}Trufor has a custom research only licence. "
             "See the LICENSE inside the method folder or at https://github.com/grip-unina/TruFor/blob/main/test_docker/LICENSE.txt. "  # noqa: E501
             "By continuing the use, you are agreeing to the conditions on their "
@@ -208,7 +208,7 @@ class TruFor(BaseTorchMethod):
         if weights is not None:
             self.load_weights(weights)
         else:
-            logger.warn("No weight file provided. Initiralizing random weights.")
+            logger.warning("No weight file provided. Initiralizing random weights.")
             self.init_weights()
 
         self.to_device(device)

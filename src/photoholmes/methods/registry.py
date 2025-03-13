@@ -14,6 +14,7 @@ class MethodRegistry(Enum):
     TRUFOR = "trufor"
     FOCAL = "focal"
     ZERO = "zero"
+    MESORCH = "mesorch"
 
     @classmethod
     def get_all_methods(cls):

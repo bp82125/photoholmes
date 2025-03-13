@@ -154,3 +154,74 @@ def resize_heatmap_with_trim_and_pad(
         0,
     )
     return heatmap
+
+
+class ResizeToOriginal:
+    """
+    Resizes an output tensor or array back to the original image dimensions.
+    """
+
+    def __init__(self, interpolation: str = "bilinear"):
+        """
+        Args:
+            interpolation (str): Interpolation method to use. 
+                Options: 'nearest', 'bilinear', 'bicubic'. Default: 'bilinear'
+        """
+        self.interpolation = interpolation
+
+    def __call__(self, output: Union[Tensor, NDArray], original_size: Tuple[int, int]) -> Union[Tensor, NDArray]:
+        """
+        Resize the output back to the original image dimensions.
+
+        Args:
+            output (Union[Tensor, NDArray]): The output tensor or array to resize
+            original_size (Tuple[int, int]): The original size (height, width) to resize to
+
+        Returns:
+            Union[Tensor, NDArray]: The resized output
+        """
+        if isinstance(output, Tensor):
+            # Add batch and channel dimensions if needed
+            add_batch = output.ndim == 2
+            add_channel = output.ndim < 3
+
+            if add_batch:
+                output = output.unsqueeze(0)
+            if add_channel:
+                output = output.unsqueeze(1)
+
+            # Resize using interpolate
+            output = F.interpolate(
+                output,
+                size=original_size,
+                mode=self.interpolation,
+                align_corners=False if self.interpolation != 'nearest' else None
+            )
+
+            # Remove extra dimensions if they were added
+            if add_channel:
+                output = output.squeeze(1)
+            if add_batch:
+                output = output.squeeze(0)
+
+        elif isinstance(output, np.ndarray):
+            import cv2
+
+            # Map interpolation method names to cv2 constants
+            interp_map = {
+                'nearest': cv2.INTER_NEAREST,
+                'bilinear': cv2.INTER_LINEAR,
+                'bicubic': cv2.INTER_CUBIC
+            }
+            interp_method = interp_map.get(self.interpolation, cv2.INTER_LINEAR)
+
+            # Resize using cv2
+            if output.ndim == 2:
+                output = cv2.resize(
+                    output, (original_size[1], original_size[0]), interpolation=interp_method)
+            else:
+                # Handle multiple channels
+                output = cv2.resize(
+                    output, (original_size[1], original_size[0]), interpolation=interp_method)
+
+        return output

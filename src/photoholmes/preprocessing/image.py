@@ -2,6 +2,7 @@ from typing import Any, Dict, List, Tuple, TypeVar, Union
 
 import numpy as np
 import torch
+import torch.nn.functional as F
 from numpy.typing import NDArray
 from PIL.Image import Image
 from torch import Tensor
@@ -312,3 +313,170 @@ class GetImageSize(BasePreprocessing):
         else:
             raise ValueError(f"Image type not supported: {type(image)}")
         return {"image": image, "image_size": size, **kwargs}
+
+
+class RGBtoYCrCb(BasePreprocessing):
+    """
+    Converts RGB image to YCrCb color space.
+    """
+
+    def __call__(self, image: T, **kwargs) -> Dict[str, Any]:
+        """
+        Args:
+            image (T): Image to be converted to YCrCb.
+            **kwargs: Additional keyword arguments to passthrough.
+
+        Returns:
+            Dict[str, Any]: A dictionary with the following key-value pairs:
+                - "image": The input image converted to YCrCb color space.
+                - **kwargs: The additional keyword arguments passed through unchanged.
+        """
+        if isinstance(image, Tensor):
+            # Convert from RGB [0,1] to YCrCb
+            if image.max() <= 1.0:
+                image = image * 255.0
+
+            y = 0.299 * image[0] + 0.587 * image[1] + 0.114 * image[2]
+            cr = 0.5 + (image[0] - y) * 0.713 / 255.0
+            cb = 0.5 + (image[2] - y) * 0.564 / 255.0
+            y = y / 255.0
+
+            image = torch.stack([y, cr, cb], dim=0)
+        else:
+            # Convert from RGB to YCrCb
+            if image.max() <= 1.0:
+                image = image * 255.0
+
+            y = 0.299 * image[..., 0] + 0.587 * image[..., 1] + 0.114 * image[..., 2]
+            cr = 0.5 + (image[..., 0] - y) * 0.713 / 255.0
+            cb = 0.5 + (image[..., 2] - y) * 0.564 / 255.0
+            y = y / 255.0
+
+            image = np.stack([y, cr, cb], axis=-1)
+
+        return {"image": image, **kwargs}
+
+
+class Resize(BasePreprocessing):
+    """
+    Resizes an image to a target size.
+    """
+
+    def __init__(self, target_size: Union[int, Tuple[int, int]]) -> None:
+        """
+        Args:
+            target_size (Union[int, Tuple[int, int]]): Target size for the image.
+                If an integer is provided, the image will be resized to a square.
+        """
+        if isinstance(target_size, int):
+            self.target_size = (target_size, target_size)
+        else:
+            self.target_size = target_size
+
+    def __call__(self, image: T, **kwargs) -> Dict[str, Any]:
+        """
+        Args:
+            image (T): Image to be resized.
+            **kwargs: Additional keyword arguments to passthrough.
+
+        Returns:
+            Dict[str, Any]: A dictionary with the following key-value pairs:
+                - "image": The resized image.
+                - "original_size": The original size of the image (height, width).
+                - **kwargs: The additional keyword arguments passed through unchanged.
+        """
+        # Store original size
+        if isinstance(image, Tensor):
+            if image.ndim == 3:
+                original_size = (image.shape[1], image.shape[2])  # H, W
+            else:
+                original_size = (image.shape[2], image.shape[3])  # H, W
+
+            # Handle single image vs batch
+            if image.ndim == 3:
+                image = image.unsqueeze(0)
+                was_3d = True
+            else:
+                was_3d = False
+
+            # Resize using F.interpolate
+            image = F.interpolate(
+                image,
+                size=self.target_size,
+                mode='bilinear',
+                align_corners=True
+            )
+
+            if was_3d:
+                image = image.squeeze(0)
+
+        elif isinstance(image, np.ndarray):
+            original_size = image.shape[:2]  # H, W
+
+            # Use cv2 for numpy arrays
+            import cv2
+            if image.ndim == 2:
+                image = cv2.resize(image, self.target_size[::-1])  # cv2 takes (W, H)
+            else:
+                image = cv2.resize(image, self.target_size[::-1])  # cv2 takes (W, H)
+
+        else:
+            raise ValueError(f"Image type {type(image)} not supported by Resize")
+
+        return {"image": image, "original_size": original_size, **kwargs}
+
+
+class EnsureFloatTensor(BasePreprocessing):
+    """
+    Ensures the image is a float tensor with values in the range [0, 1].
+    """
+
+    def __call__(self, image: T, **kwargs) -> Dict[str, Any]:
+        """
+        Args:
+            image (T): Image to ensure is a float tensor.
+            **kwargs: Additional keyword arguments to passthrough.
+
+        Returns:
+            Dict[str, Any]: A dictionary with the following key-value pairs:
+                - "image": The image as a float tensor.
+                - **kwargs: The additional keyword arguments passed through unchanged.
+        """
+        # Ensure image is a float tensor
+        if isinstance(image, Tensor):
+            if image.dtype != torch.float32:
+                image = image.float()
+
+        return {"image": image, **kwargs}
+    
+class StoreOriginalSize(BasePreprocessing):
+    """
+    Stores the original size of the image without modifying it.
+    """
+
+    def __call__(self, image: T, **kwargs) -> Dict[str, Any]:
+        """
+        Args:
+            image (T): Image whose size will be stored.
+            **kwargs: Additional keyword arguments to passthrough.
+
+        Returns:
+            Dict[str, Any]: A dictionary with the following key-value pairs:
+                - "image": The original image unchanged.
+                - "original_size": The size of the input image (height, width).
+                - **kwargs: The additional keyword arguments passed through unchanged.
+        """
+        if isinstance(image, Tensor):
+            if image.ndim == 3:
+                size = tuple(image.shape[1:])  # H, W
+            else:
+                size = tuple(image.shape[2:])  # H, W
+        elif isinstance(image, np.ndarray):
+            size = image.shape[:2]  # H, W
+        elif isinstance(image, Image):
+            # PIL stores size as (W, H), convert to (H, W) for consistency
+            size = (image.size[1], image.size[0])
+        else:
+            raise ValueError(f"Image type not supported: {type(image)}")
+        
+        return {"image": image, "original_size": size, **kwargs}
