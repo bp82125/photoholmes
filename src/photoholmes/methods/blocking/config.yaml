@@ -1,0 +1,3 @@
+diff_threshold: 50
+kernel_size: 33
+block_size: 8
