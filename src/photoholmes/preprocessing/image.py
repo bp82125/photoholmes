@@ -1,5 +1,6 @@
 from typing import Any, Dict, List, Tuple, TypeVar, Union
 
+import cv2
 import numpy as np
 import torch
 import torch.nn.functional as F
@@ -355,6 +356,37 @@ class RGBtoYCrCb(BasePreprocessing):
             image = np.stack([y, cr, cb], axis=-1)
 
         return {"image": image, **kwargs}
+
+class RGBtoBGR(BasePreprocessing):
+    """
+    Converts RGB image to BGR color space using OpenCV for numpy arrays 
+    and direct channel swapping for PyTorch tensors.
+    """
+
+    def __call__(self, image: T, **kwargs) -> Dict[str, Any]:
+        """
+        Args:
+            image (T): Image to be converted from RGB to BGR.
+            **kwargs: Additional keyword arguments to passthrough.
+
+        Returns:
+            Dict[str, Any]: A dictionary with the following key-value pairs:
+                - "image": The input image converted to BGR color space.
+                - **kwargs: The additional keyword arguments passed through unchanged.
+        """
+        if isinstance(image, Tensor):
+            # For PyTorch tensors
+            if image.ndim == 3 and image.shape[0] == 3:
+                bgr_image = image[[2, 1, 0]]
+            else:
+                bgr_image = image
+        else:
+            if image.ndim == 3 and image.shape[2] == 3:
+                bgr_image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+            else:
+                bgr_image = image
+        
+        return {"image": bgr_image, **kwargs}
 
 
 class Resize(BasePreprocessing):
