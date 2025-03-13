@@ -79,15 +79,15 @@ class ELA(BaseMethod):
 
     def _get_image_difference(self, image1: NDArray, image2: NDArray) -> NDArray:
         """
-        Calculates the squared difference between two images.
+        Calculates the absolute difference between two images.
 
         Args:
             image1 (NDArray): First image.
             image2 (NDArray): Second image.
 
         Returns:
-            NDArray: The squared difference between the images.
+            NDArray: The absolute difference between the images.
         """
         diff = image1.astype(np.float32) - image2.astype(np.float32)
-        diff = diff ** 2
+        diff = np.abs(diff)
         return diff
