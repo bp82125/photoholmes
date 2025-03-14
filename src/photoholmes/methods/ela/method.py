@@ -41,8 +41,8 @@ class ELA(BaseMethod):
         recompressed_image = self._recompress_image(image)
         image_difference = self._get_image_difference(image, recompressed_image)
 
-        int_difference = np.sqrt(image_difference) * self.display_multiplier
-        int_difference = np.clip(int_difference, 0, 255).astype(np.uint8)
+        int_difference = np.clip(
+            image_difference * self.display_multiplier, 0, 255).astype(np.uint8)
 
         return int_difference
 
