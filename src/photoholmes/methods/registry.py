@@ -15,6 +15,9 @@ class MethodRegistry(Enum):
     FOCAL = "focal"
     ZERO = "zero"
     MESORCH = "mesorch"
+    ELA = "ela"
+    BLOCKING = "blocking"
+    WAVELET = "wavelet"
 
     @classmethod
     def get_all_methods(cls):
