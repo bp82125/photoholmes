@@ -8,6 +8,7 @@ from numpy.typing import NDArray
 
 from photoholmes.methods.base import BaseMethod, BenchmarkOutput
 from photoholmes.postprocessing.resizing import ResizeToOriginal
+from photoholmes.postprocessing.image import zero_one_range
 
 
 class Wavelet(BaseMethod):
@@ -52,6 +53,9 @@ class Wavelet(BaseMethod):
         noise_Cb = self._process_channel(Cb, self.block_size)
 
         combined_noise_map = np.maximum.reduce([noise_Y, noise_Cr, noise_Cb])
+        
+        # Normalize the noise map to [0, 1] range
+        combined_noise_map = zero_one_range(combined_noise_map)
 
         target_size = image_size if image_size is not None else (
             image.shape[0], image.shape[1])

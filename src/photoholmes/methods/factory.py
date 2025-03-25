@@ -24,6 +24,9 @@ class MethodFactory:
         - TruFor
         - Zero
         - Mesorch
+        - ELA
+        - BlockingArtifacts
+        - Wavelet
 
     Methods:
         load(method_name: Union[str, MethodRegistry], config: Optional[Union[dict, str]] =
@@ -133,15 +136,15 @@ class MethodFactory:
             case MethodRegistry.MESORCH:
                 from photoholmes.methods.mesorch import Mesorch, mesorch_preprocessing
                 return Mesorch.from_config(config), mesorch_preprocessing
-            
+
             case MethodRegistry.BLOCKING:
                 from photoholmes.methods.blocking import BlockingArtifacts, blocking_preprocessing
                 return BlockingArtifacts.from_config(config), blocking_preprocessing
-            
+
             case MethodRegistry.ELA:
                 from photoholmes.methods.ela import ELA, ela_preprocessing
                 return ELA.from_config(config), ela_preprocessing
-            
+
             case MethodRegistry.WAVELET:
                 from photoholmes.methods.wavelet import Wavelet, wavelet_preprocessing
                 return Wavelet.from_config(config), wavelet_preprocessing
