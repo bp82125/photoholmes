@@ -1,3 +1,4 @@
+import os
 from typing import Optional, Tuple
 import logging
 from pathlib import Path
@@ -6,7 +7,7 @@ from typing import List, Optional, Tuple
 
 import cv2 as cv
 import jpegio
-import jpeglib
+import imghdr
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
@@ -191,6 +192,21 @@ def overlay_mask(img: NDArray, heatmap: NDArray) -> NDArray:
 logger = logging.getLogger(__name__)
 
 
+def is_actual_jpeg(file_path: str) -> bool:
+    """
+    Check if the given file path is an actual JPEG file.
+    
+    Args:
+        file_path (str): Path to the file to check.
+        
+    Returns:
+        bool: True if the file is a JPEG, False otherwise.
+    """
+    if not os.path.isfile(file_path):
+        return False
+
+    return imghdr.what(file_path) in ["jpeg", "jpg"]
+
 def read_jpeg_data(
     image_path: str,
     num_dct_channels: Optional[int] = None,
@@ -215,7 +231,7 @@ def read_jpeg_data(
         Tuple[Tensor, Tensor]: DCT coefficients and quantization tables.
     """
 
-    if image_path.endswith(".jpg") or image_path.endswith(".jpeg"):
+    if is_actual_jpeg(image_path):
         jpeg = jpegio.read(image_path)
     else:
         if not suppress_not_jpeg_warning:
@@ -304,3 +320,4 @@ def _DCT_from_jpeg(
         DCT_coef[i, :, :] = channel_coefficients[: dct_shape[0], : dct_shape[1]]
 
     return DCT_coef.astype(int)
+

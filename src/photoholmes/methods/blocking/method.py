@@ -7,6 +7,7 @@ from photoholmes.methods.base import BaseMethod, BenchmarkOutput
 from photoholmes.postprocessing.resizing import ResizeToOriginal
 from photoholmes.utils.image import tensor2numpy
 from photoholmes.utils.patched_image import PatchedImage
+from photoholmes.postprocessing.image import zero_one_range
 
 
 class BlockingArtifacts(BaseMethod):
@@ -60,14 +61,18 @@ class BlockingArtifacts(BaseMethod):
         combined_artifacts = vertical_artifacts + horizontal_artifacts
         artifact_map = self._analyze_blocks(combined_artifacts)
 
-        target_size = image_size if image_size is not None else (image.shape[0], image.shape[1])
-        
+        # Normalize heatmap to 0-1 range
+        artifact_map = zero_one_range(artifact_map)
+
+        target_size = image_size if image_size is not None else (
+            image.shape[0], image.shape[1])
+
         resizer = ResizeToOriginal(interpolation='bilinear')
         heatmap = resizer(artifact_map, target_size)
 
         return heatmap
 
-    def benchmark(self, image: np.ndarray) -> BenchmarkOutput:
+    def benchmark(self, image: np.ndarray, image_size: Tuple[int, int] = None) -> BenchmarkOutput:
         """
         Benchmarks the Blocking Artifacts method using provided image.
 
@@ -77,7 +82,7 @@ class BlockingArtifacts(BaseMethod):
         Returns:
             BenchmarkOutput: Contains the heatmap and placeholders for mask and detection.
         """
-        heatmap = self.predict(image)
+        heatmap = self.predict(image, image_size)
         return {
             "heatmap": torch.from_numpy(heatmap),
             "mask": None,
@@ -113,6 +118,7 @@ class BlockingArtifacts(BaseMethod):
         Returns:
             np.ndarray: Array of differences between adjacent pixels.
         """
+
         pad_top_bottom, pad_left_right = (self.kernel_size // 2, self.kernel_size // 2)
         pad_width = ((pad_top_bottom, pad_top_bottom), (0, 0)) if axis == 0 else \
                     ((0, 0), (pad_left_right, pad_left_right))
@@ -139,7 +145,7 @@ class BlockingArtifacts(BaseMethod):
             np.ndarray: Extracted edge patterns.
         """
         kernel_shape = (self.kernel_size, 1) if axis == 0 else (1, self.kernel_size)
-        summed_edges = cv2.boxFilter(edge_diff, -1, kernel_shape, normalize=False)
+        summed_edges = cv2.boxFilter(edge_diff, -1, kernel_shape, normalize=True)
         mid_filtered = cv2.medianBlur(summed_edges.astype(np.uint8), self.kernel_size)
         return summed_edges - mid_filtered
 
@@ -153,7 +159,7 @@ class BlockingArtifacts(BaseMethod):
         Returns:
             np.ndarray: Array of block scores indicating artifact presence.
         """
-        # Use PatchedImage for efficient block processing
+
         tensor_image = torch.from_numpy(image).float()
         patched_img = PatchedImage(tensor_image.unsqueeze(0),
                                    self.block_size, self.block_size)
@@ -164,6 +170,7 @@ class BlockingArtifacts(BaseMethod):
         for i in range(blocks[0]):
             for j in range(blocks[1]):
                 block = tensor2numpy(patched_img.get_patch(i, j).squeeze(0))
+                # print(f"Block ({i}, {j}) min/max:", block.min(), block.max())
                 block_scores[i, j] = self._calculate_artifact_score(block)
 
         return block_scores

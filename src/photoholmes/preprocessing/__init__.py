@@ -13,7 +13,7 @@ from .image import (
     ToTensor,
     ZeroOneRange,
     EnsureFloatTensor,
-    StoreOriginalSize
+    StoreOriginalSize,
 )
 from .pipeline import PreProcessingPipeline
 
@@ -31,5 +31,5 @@ __all__ = [
     "RGBtoYCrCb",
     "Resize",
     "EnsureFloatTensor",
-    "StoreOriginalSize"
+    "StoreOriginalSize",
 ]

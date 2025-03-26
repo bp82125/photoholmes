@@ -285,6 +285,16 @@ class DatasetFactory:
                     tampered_only=tampered_only,
                 )
 
+            case DatasetRegistry.IN_THE_WILD:
+                from photoholmes.datasets.in_the_wild import InTheWildDataset
+
+                return InTheWildDataset(
+                    dataset_path=dataset_path,
+                    preprocessing_pipeline=preprocessing_pipeline,
+                    load=load,
+                    tampered_only=tampered_only,
+                )
+
             case _:
                 raise NotImplementedError(
                     f"Dataset '{dataset_name}' is not implemented."

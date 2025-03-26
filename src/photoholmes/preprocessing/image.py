@@ -385,7 +385,7 @@ class RGBtoBGR(BasePreprocessing):
                 bgr_image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
             else:
                 bgr_image = image
-        
+
         return {"image": bgr_image, **kwargs}
 
 

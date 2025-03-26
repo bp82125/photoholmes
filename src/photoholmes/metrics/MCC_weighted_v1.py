@@ -69,11 +69,20 @@ class MCC_weighted_v1(Metric):
             self.MCC_weighted += 1.0
         if TPw + TNw == 0 and FPw + FNw != 0:
             self.MCC_weighted += -1.0
+        
+        
         denominator = torch.sqrt((TPw + FPw) * (TPw + FNw) * (TNw + FPw) * (TNw + FNw))
-        if denominator != 0:
+        if denominator == 0:
+            if TPw + TNw != 0 and FPw + FNw == 0:
+                self.MCC_weighted += 1.0  # Perfect correlation
+            elif TPw + TNw == 0 and FPw + FNw != 0:
+                self.MCC_weighted += -1.0  # Perfect negative correlation
+            else:
+                self.MCC_weighted += 0.0  # Undefined MCC should default to 0
+        else:
             self.MCC_weighted += (TPw * TNw - FPw * FNw) / denominator
 
-        self.total_images += torch.tensor(1)
+        self.total_images += 1
 
     def compute(self) -> Tensor:
         """

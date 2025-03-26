@@ -30,6 +30,7 @@ class DatasetRegistry(Enum):
     TRACE_JPEG_QUALITY_ENDO = "trace_jpeg_quality_endo"
     TRACE_HYBRID_EXO = "trace_hybrid_exo"
     TRACE_HYBRID_ENDO = "trace_hybrid_endo"
+    IN_THE_WILD = "in_the_wild"
 
     @classmethod
     def get_all_datasets(cls):
