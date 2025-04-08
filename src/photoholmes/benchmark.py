@@ -118,7 +118,7 @@ class Benchmark:
             metrics (MetricCollection): Collection of metrics to compute.
 
         Returns:
-            dict: Computed metrics for the benchmark.
+            dict: Computed metrics for the benchmark and timing information.
         """
         log.info(f"Using device: {self.device}")
         if method.device != self.device:
@@ -142,9 +142,14 @@ class Benchmark:
             self.device, dtype=torch.float32
         )
 
+        total_start_time = time.perf_counter()
+        total_image_processing_time = 0
         image_count = 0
+
         for data, mask, image_name in tqdm(dataset, desc="Processing Images"):
             output = None
+            image_start_time = time.perf_counter()
+
             if self.use_existing_output:
                 output = self._load_existing_output(output_path, image_name)
 
@@ -154,6 +159,9 @@ class Benchmark:
 
                 if self.save_method_outputs:
                     self._save_predicted_output(output_path, image_name, output)
+
+            image_processing_time = time.perf_counter() - image_start_time
+            total_image_processing_time += image_processing_time
 
             mask = mask.to(self.device)
             if output["detection"] is not None:
@@ -185,8 +193,19 @@ class Benchmark:
 
             image_count += 1
 
+        total_time = time.perf_counter() - total_start_time
+        avg_time_per_image = total_image_processing_time / image_count if image_count > 0 else 0
+
         log.info("-" * 80)
         log.info("-" * 80)
+        log.info(f"Total processing time: {total_time:.4f} seconds")
+        log.info(f"Average time per image: {avg_time_per_image:.4f} seconds")
+        log.info("-" * 80)
+
+        timing_data = {
+            "total_time": total_time,
+            "avg_time_per_image": avg_time_per_image
+        }
 
         if self.save_metrics_flag:
             tampered = (
@@ -202,6 +221,7 @@ class Benchmark:
                     metrics=heatmap_metrics,
                     report_id=report_id,
                     total_images=image_count,
+                    timing_data=timing_data
                 )
             else:
                 log.info("     - No heatmap metrics to save")
@@ -213,6 +233,7 @@ class Benchmark:
                     metrics=mask_metrics,
                     report_id=report_id,
                     total_images=image_count,
+                    timing_data=timing_data
                 )
             else:
                 log.info("     - No mask metrics to save")
@@ -224,9 +245,11 @@ class Benchmark:
                     metrics=detection_metrics,
                     report_id=report_id,
                     total_images=image_count,
+                    timing_data=timing_data
                 )
             else:
                 log.info("     - No detection metrics to save")
+
         else:
             log.info("     - Not saving metrics")
 
@@ -236,7 +259,10 @@ class Benchmark:
         log.info("-" * 80)
         log.info("-" * 80)
 
-        metrics_return = {}
+        metrics_return = {
+            "timing": timing_data
+        }
+
         if self._heatmap:
             metrics_return["heatmap"] = heatmap_metrics.compute()
         if self._mask:
@@ -307,6 +333,7 @@ class Benchmark:
         metrics: MetricCollection,
         report_id: str,
         total_images: int,
+        timing_data: Optional[Dict[str, float]] = None,
     ):
         """
         Save predicted outputs for an image.
@@ -316,7 +343,7 @@ class Benchmark:
             metrics (MetricCollection): Collection of metrics to compute.
             report_id (str): ID for the report.
             total_images (int): Total number of images processed.
-
+            timing_data (Optional[Dict[str, float]]): Timing information.
         """
         metrics_path = output_path / "metrics" / report_id
         os.makedirs(metrics_path, exist_ok=True)
@@ -347,7 +374,38 @@ class Benchmark:
             "type": metrics.prefix,
         }
 
+        if timing_data:
+            report["timing"] = timing_data
+
         with open(metrics_path / f"{metrics.prefix}_report.json", "w") as f:
+            json.dump(report, f)
+
+    def _save_timing_metrics(
+        self,
+        output_path: Path,
+        report_id: str,
+        timing_data: Dict[str, float],
+        total_images: int,
+    ):
+        """
+        Save timing metrics separately.
+
+        Args:
+            output_path (Path): Path to the output folder.
+            report_id (str): ID for the report.
+            timing_data (Dict[str, float]): Timing information.
+            total_images (int): Total number of images processed.
+        """
+        metrics_path = output_path / "metrics" / report_id
+        os.makedirs(metrics_path, exist_ok=True)
+
+        report = {
+            "timing": timing_data,
+            "total_images": total_images,
+            "type": "timing",
+        }
+
+        with open(metrics_path / "timing_report.json", "w") as f:
             json.dump(report, f)
 
     def _save_predicted_output(
