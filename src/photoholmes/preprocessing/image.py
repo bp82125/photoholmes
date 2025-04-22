@@ -392,49 +392,51 @@ class RGBtoBGR(BasePreprocessing):
 class Resize(BasePreprocessing):
     """
     Resizes an image to a target size.
+    If target_size is an int:
+        - Resize the longer side to this value while preserving aspect ratio.
+        - If the longest side is already <= target_size, do nothing.
+    If target_size is a tuple: resize directly to that size.
     """
 
     def __init__(self, target_size: Union[int, Tuple[int, int]]) -> None:
-        """
-        Args:
-            target_size (Union[int, Tuple[int, int]]): Target size for the image.
-                If an integer is provided, the image will be resized to a square.
-        """
-        if isinstance(target_size, int):
-            self.target_size = (target_size, target_size)
-        else:
-            self.target_size = target_size
+        self.target_size = target_size
 
-    def __call__(self, image: T, **kwargs) -> Dict[str, Any]:
-        """
-        Args:
-            image (T): Image to be resized.
-            **kwargs: Additional keyword arguments to passthrough.
-
-        Returns:
-            Dict[str, Any]: A dictionary with the following key-value pairs:
-                - "image": The resized image.
-                - "original_size": The original size of the image (height, width).
-                - **kwargs: The additional keyword arguments passed through unchanged.
-        """
-        # Store original size
+    def __call__(self, image: Union[Tensor, np.ndarray], **kwargs) -> Dict[str, Any]:
+        # --- PyTorch Tensor ---
         if isinstance(image, Tensor):
             if image.ndim == 3:
                 original_size = (image.shape[1], image.shape[2])  # H, W
-            else:
-                original_size = (image.shape[2], image.shape[3])  # H, W
-
-            # Handle single image vs batch
-            if image.ndim == 3:
                 image = image.unsqueeze(0)
                 was_3d = True
             else:
+                original_size = (image.shape[2], image.shape[3])  # H, W
                 was_3d = False
 
-            # Resize using F.interpolate
+            orig_h, orig_w = original_size
+
+            if isinstance(self.target_size, int):
+                max_side = max(orig_h, orig_w)
+                if max_side <= self.target_size:
+                    if was_3d:
+                        image = image.squeeze(0)
+                    return {"image": image, "original_size": original_size, **kwargs}
+
+                if orig_h >= orig_w:
+                    scale = self.target_size / orig_h
+                    new_h = self.target_size
+                    new_w = int(orig_w * scale)
+                else:
+                    scale = self.target_size / orig_w
+                    new_w = self.target_size
+                    new_h = int(orig_h * scale)
+
+                size = (new_h, new_w)
+            else:
+                size = self.target_size
+
             image = F.interpolate(
                 image,
-                size=self.target_size,
+                size=size,
                 mode='bilinear',
                 align_corners=True
             )
@@ -442,15 +444,31 @@ class Resize(BasePreprocessing):
             if was_3d:
                 image = image.squeeze(0)
 
+        # --- NumPy Array ---
         elif isinstance(image, np.ndarray):
-            original_size = image.shape[:2]  # H, W
+            orig_h, orig_w = image.shape[:2]
+            original_size = (orig_h, orig_w)
 
-            # Use cv2 for numpy arrays
-            import cv2
-            if image.ndim == 2:
-                image = cv2.resize(image, self.target_size[::-1])  # cv2 takes (W, H)
+            if isinstance(self.target_size, int):
+                max_side = max(orig_h, orig_w)
+                if max_side <= self.target_size:
+                    return {"image": image, "original_size": original_size, **kwargs}
+
+                if orig_h >= orig_w:
+                    scale = self.target_size / orig_h
+                    new_h = self.target_size
+                    new_w = int(orig_w * scale)
+                else:
+                    scale = self.target_size / orig_w
+                    new_w = self.target_size
+                    new_h = int(orig_h * scale)
+
+                size = (new_w, new_h)  # cv2 uses (W, H)
             else:
-                image = cv2.resize(image, self.target_size[::-1])  # cv2 takes (W, H)
+                size = (self.target_size[1], self.target_size[0])  # (W, H)
+
+            import cv2
+            image = cv2.resize(image, size)
 
         else:
             raise ValueError(f"Image type {type(image)} not supported by Resize")
@@ -480,7 +498,8 @@ class EnsureFloatTensor(BasePreprocessing):
                 image = image.float()
 
         return {"image": image, **kwargs}
-    
+
+
 class StoreOriginalSize(BasePreprocessing):
     """
     Stores the original size of the image without modifying it.
@@ -510,5 +529,5 @@ class StoreOriginalSize(BasePreprocessing):
             size = (image.size[1], image.size[0])
         else:
             raise ValueError(f"Image type not supported: {type(image)}")
-        
+
         return {"image": image, "original_size": size, **kwargs}

@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Optional, Tuple
 from photoholmes.postprocessing.resizing import ResizeToOriginal
 
@@ -191,20 +192,17 @@ class Mesorch(BaseTorchMethod):
         if image.ndim == 3:
             image = image.unsqueeze(0)
 
-        # Move image to the same device as the model
-        if image.device != self.device:
-            image = image.to(self.device)
+        image = image.to(self.device)
 
         with torch.no_grad():
             mask_pred, _ = self.forward(image)
 
-        mask_pred = mask_pred.squeeze(0).squeeze(0).cpu()
+        mask_pred = mask_pred.squeeze(0).squeeze(0)
 
-        # Resize to original dimensions if requested
         if original_size is not None:
             mask_pred = self.resize_to_original(mask_pred, original_size)
 
-        return mask_pred
+        return mask_pred.to(self.device)
 
     def benchmark(self, image: torch.Tensor, original_size: Optional[Tuple[int, int]] = None) -> BenchmarkOutput:
         """
