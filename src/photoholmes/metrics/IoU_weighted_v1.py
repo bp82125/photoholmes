@@ -56,7 +56,7 @@ class IoU_weighted_v1(Metric):
             ValueError: If the shapes of predictions and targets do not match.
         """
         if preds.shape != target.shape:
-            raise ValueError("preds and target must have the same shape")
+            raise ValueError(f"preds and target must have the same shape {preds.shape} != {target.shape}")
         target = target.to(torch.int)
         pred_flat = preds.flatten()
         target_flat = target.flatten()
