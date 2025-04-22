@@ -120,11 +120,11 @@ class EXIFAsLanguage(BaseMethod):
                 p_img, batch_size=self.feat_batch_size
             )
         # PCA visualization
-        pca = PCA(n_components=3, whiten=True)
-        feature_transform = pca.fit_transform(patch_features.cpu().numpy())
-        pred_pca_map = self.predict_pca_map(
-            p_img, feature_transform, batch_size=self.pred_batch_size
-        )
+        # pca = PCA(n_components=3, whiten=True)
+        # feature_transform = pca.fit_transform(patch_features.cpu().numpy())
+        # pred_pca_map = self.predict_pca_map(
+        #     p_img, feature_transform, batch_size=self.pred_batch_size
+        # )
 
         # Predict consistency maps
         pred_maps = self.predict_consistency_maps(
@@ -149,19 +149,20 @@ class EXIFAsLanguage(BaseMethod):
             interpolation=cv2.INTER_LINEAR,
         )
 
-        out_pca = np.zeros((height, width, 3))
-        p1, p3 = np.percentile(pred_pca_map, 0.5), np.percentile(pred_pca_map, 99.5)
-        pred_pca_map = (pred_pca_map - p1) / (p3 - p1) * 255  # >0
-        pred_pca_map[pred_pca_map < 0] = 0
-        pred_pca_map[pred_pca_map > 255] = 255
-        for i in range(3):
-            out_pca[:, :, i] = cv2.resize(
-                pred_pca_map[:, :, i], (width, height), interpolation=cv2.INTER_LINEAR
-            )
+        # out_pca = np.zeros((height, width, 3))
+        # p1, p3 = np.percentile(pred_pca_map, 0.5), np.percentile(pred_pca_map, 99.5)
+        # pred_pca_map = (pred_pca_map - p1) / (p3 - p1) * 255  # >0
+        # pred_pca_map[pred_pca_map < 0] = 0
+        # pred_pca_map[pred_pca_map > 255] = 255
+        # for i in range(3):
+        #     out_pca[:, :, i] = cv2.resize(
+        #         pred_pca_map[:, :, i], (width, height), interpolation=cv2.INTER_LINEAR
+        #     )
         score = pred_maps.mean()
-        affinity_matrix = self.generate_afinity_matrix(patch_features)
+        # affinity_matrix = self.generate_afinity_matrix(patch_features)
 
-        return out_ms, out_ncuts, score, out_pca, affinity_matrix
+        # return out_ms, out_ncuts, score, out_pca, affinity_matrix
+        return out_ms, out_ncuts, score
 
     def benchmark(self, image: Tensor) -> BenchmarkOutput:
         """
@@ -174,8 +175,8 @@ class EXIFAsLanguage(BaseMethod):
             BenchmarkOutput: Contains the heatmap, mask and
                 detection.
         """
-        ms, ncuts, _, _, _ = self.predict(image)
-
+        # ms, ncuts, _, _, _ = self.predict(image)
+        ms, ncuts, _, = self.predict(image)
         return exif_as_language_postprocessing(
             {"heatmap": ms, "mask": ncuts, "detection": None}, self.device
         )
@@ -205,6 +206,39 @@ class EXIFAsLanguage(BaseMethod):
         p_img = PatchedImage(img, self.patch_size, num_per_dim=self.num_per_dim)
 
         return p_img
+
+
+    # def predict_consistency_maps(self, img: PatchedImage, patch_features: Tensor, batch_size: int = 128):
+    #     # For each patch, how many overlapping patches?
+    #     spread = max(1, img.patch_size // img.stride)
+
+    #     # Calculate affinity matrix once instead of per-patch
+    #     patch_features_norm = torch.nn.functional.normalize(patch_features, dim=1)
+    #     affinity_matrix = 1 - torch.mm(patch_features_norm, patch_features_norm.t()).cpu()
+
+    #     # Initialize response maps with proper dimensions
+    #     h_idx, w_idx = img.max_h_idx + spread - 1, img.max_w_idx + spread - 1
+    #     responses = torch.zeros((h_idx, w_idx, h_idx, w_idx))
+    #     vote_counts = torch.zeros((h_idx, w_idx, h_idx, w_idx)) + 1e-4
+
+    #     # Use the affinity matrix to populate responses
+    #     for batch_idxs in img.pred_idxs_gen(batch_size=batch_size):
+    #         for i, (h1, w1, h2, w2) in enumerate(batch_idxs):
+    #             idx1 = h1 * img.max_w_idx + w1
+    #             idx2 = h2 * img.max_w_idx + w2
+    #             sim_val = affinity_matrix[idx1, idx2]
+
+    #             responses[
+    #                 h1:(h1 + spread), w1:(w1 + spread),
+    #                 h2:(h2 + spread), w2:(w2 + spread)
+    #             ] += sim_val
+
+    #             vote_counts[
+    #                 h1:(h1 + spread), w1:(w1 + spread),
+    #                 h2:(h2 + spread), w2:(w2 + spread)
+    #             ] += 1
+
+    #     return responses / vote_counts
 
     def predict_consistency_maps(
         self, img: PatchedImage, patch_features: Tensor, batch_size: int = 64
