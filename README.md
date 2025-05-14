@@ -1,4 +1,23 @@
- <img src="docs/Logo.png" alt="Project Logo"> 
+# Disclaimer⚠️
+
+This is a fork of the [PhotoHolmes](https://github.com/photoholmes/photoholmes) library, extended with additional methods and datasets for use in my academic project. I'm not affiliated with the original authors, and any issues related to this fork should be reported here, not to the original repository.
+
+## Added Methods
+- **JPEG blocking artifact inconsistencies (BLOCK)**: Li, Weihai, Yuan Yuan, and Nenghai Yu. "Passive detection of doctored JPEG image via block artifact grid extraction." Signal Processing 89, no. 9 (2009): 1821-1829. [[**Paper**](https://www.sciencedirect.com/science/article/abs/pii/S0165168409001315)]
+
+- **Error Level Analysis (ELA)**: Krawetz, N. "A picture's worth: Digital image analysis and forensics." Black Hat Briefings DC, Washington, DC, 2008. [Online]. [[**Paper**](https://blackhat.com/presentations/bh-dc-08/Krawetz/Whitepaper/bh-dc-08-krawetz-WP.pdf)] [[**Website**](https://fotoforensics.com/)]
+
+- **High frequency noise (WAVELET)**: Mahdian, Babak, and Stanislav Saic. "Using noise inconsistencies for blind image forensics." Image and Vision Computing 27, no. 10 (2009): 1497-1503. [[**Paper**](https://www.sciencedirect.com/science/article/abs/pii/S0262885609000146)]
+
+- **Mesorch**: Zhu, Xuekang, Xiaochen Ma, Lei Su, Zhuohang Jiang, Bo Du, Xiwen Wang, Zeyu Lei, Wentao Feng, Chi-Man Pun, and Jizhe Zhou. "Mesoscopic insights: Orchestrating multi-scale & hybrid architecture for image manipulation localization." arXiv preprint arXiv:2412.13753, 2024. [[**Paper**](https://arxiv.org/abs/2412.13753)] [[**Code**](https://github.com/scu-zjz/Mesorch)]
+
+
+## Added Datasets
+- **In-the-Wild Image Splice Dataset**: Huh, Minyoung, Andrew Liu, Andrew Owens, and Alexei A. Efros. "Fighting fake news: Image splice detection via learned self-consistency." In Proceedings of the European Conference on Computer Vision (ECCV), 2018. [[**Website**](https://minyoungg.github.io/selfconsistency/)]
+
+<hr>
+
+<img src="docs/Logo.png" alt="Project Logo">
 
 # <p style="text-align: center; font-size: 36; font-weight: bold">A python library for forgery detection in digital images</p>
 
@@ -8,8 +27,8 @@ PhotoHolmes is an open-source _python_ library designed to easily run and benchm
 
 ## Development setup
 
-The Python requirements are `python >= 3.10`. Create a virtual enviroment, either with conda or with pip.
-Activate the enviroment and install the library and required packages. For the latter, there are two options.
+The Python requirements are `python >= 3.10`. Create a virtual environment, either with conda or with pip.
+Activate the environment and install the library and required packages. For the latter, there are two options.
 
 ### Install: Benchmarking and library use
 
@@ -22,7 +41,7 @@ pip install -e .
 > **Note:** `pip install photoholmes` will be later available in PyPI once the library is published.
 
 > **Note:** not all method dependencies are included as a requirement. Some particularly big packages, like huggingface's transformers, which are use by only one method are excluded
-> and need to be installed manually if the user wishes to use the method. When the user tries to use a method that is not installed, the library will raise an error poiting out how to solve the issue.
+> and need to be installed manually if the user wishes to use the method. When the user tries to use a method that is not installed, the library will raise an error pointing out how to solve the issue.
 
 ### Install: Develop
 
@@ -51,7 +70,7 @@ For the benchmark to run, `method`, `dataset` and `metrics` must be instances of
 ```python
 from photoholmes.methods.factory import MethodFactory, MethodRegistry
 from photoholmes.datasets.factory import DatasetFactory, DatasetRegistry
-from photohoolmes.metrics.factory import MetricsFactory, MetricsRegsitry
+from photoholmes.metrics.factory import MetricsFactory, MetricsRegistry
 
 method, method_preprocessing = MethodFactory.load(MethodRegistry.IMPLEMENTED_METHOD)
 dataset = DatasetFactory.load(
@@ -67,7 +86,7 @@ However, if you have custom methods, datasets or metrics you wish to use for a b
 
 > **Warning on MPS as a device:** We advise the user to be careful when running a method on `mps` as the `device`. The PhotoHolmes team found it produces different outputs (with respect to `cpu` or `cuda`) in some cases.
 
-## `run` the Photolmes CLI
+## `run` the Photoholmes CLI
 
 Benchmarking aside, PhotoHolmes makes it even quicker and more practical when it comes to evaluating implemented methods on single images. This can be done using the PhotoHolmes CLI with the command `run`, as follows:
 

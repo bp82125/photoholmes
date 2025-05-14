@@ -146,7 +146,7 @@ class BlockingArtifacts(BaseMethod):
         """
         kernel_shape = (self.kernel_size, 1) if axis == 0 else (1, self.kernel_size)
         summed_edges = cv2.boxFilter(edge_diff, -1, kernel_shape, normalize=True)
-        mid_filtered = cv2.medianBlur(summed_edges.astype(np.uint8), self.kernel_size)
+        mid_filtered = cv2.medianBlur(edge_diff.astype(np.uint8), self.kernel_size)
         return summed_edges - mid_filtered
 
     def _analyze_blocks(self, image: np.ndarray) -> np.ndarray:

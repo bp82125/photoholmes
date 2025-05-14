@@ -22,13 +22,12 @@ class EXIFAsLanguageArchConfig(BaseModel):
 pretrained_arch = EXIFAsLanguageArchConfig(
     clip_model=ClipModelConfig(vision="resnet50", text="distilbert", pooling="mean"),
     patch_size=128,
-    num_per_dim=20,
-    feat_batch_size=128,
+    num_per_dim=30,
+    feat_batch_size=32,
     pred_batch_size=1024,
     ms_window=10,
     ms_iter=5,
 )
-
 
 class EXIFAsLanguageConfig(BaseModel):
     weights: Optional[Union[str, dict]]

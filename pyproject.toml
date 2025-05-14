@@ -9,7 +9,7 @@ requires-python = ">=3.10"
 license = { file = "LICENSE" }
 readme = "README.md"
 dependencies = [
-    "numpy",
+    "numpy==1.26.4",
     "matplotlib",
     "opencv-python",
     "scikit-learn",
